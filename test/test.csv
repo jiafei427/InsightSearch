@@ -1,0 +1,11 @@
+Issue Key,Title,Description,Priority,Status,Assignee,Created Date,baidu_link
+PROJ-001,Login button not working,"Clicking the login button has no effect. Users are unable to access their accounts.",High,To Do,John Doe,2023-01-15,https://www.baidu.com/link/login-fix
+PROJ-002,Homepage slow to load,"The homepage is taking over 10 seconds to load, causing frustration among users.",Medium,In Progress,Jane Smith,2023-01-14,https://www.baidu.com/link/homepage-speed
+PROJ-003,Registration error,"The registration page throws an 'Invalid data submitted' error when valid input is provided.",High,Open,Alex Kim,2023-01-13,https://www.baidu.com/link/registration-error
+PROJ-004,Profile UI broken for mobile,"Text overlaps with buttons on the profile page when viewed on mobile devices.",Low,To Do,None,2023-01-12,https://www.baidu.com/link/profile-ui-issues
+PROJ-005,Password reset email not received,"Users report that they are not receiving password reset emails, even though the functionality appears to be working server-side.",Critical,In Review,Sarah Lee,2023-01-11,https://www.baidu.com/link/password-reset
+PROJ-006,Add dark mode feature,"Add an option to enable dark mode to enhance accessibility for users with visual impairments.",Low,Done,Chris Park,2023-01-10,https://www.baidu.com/link/dark-mode
+PROJ-007,Error on checkout page,"An exception occurs during checkout with certain payment methods, stopping the transaction.",High,Open,Emily Brown,2023-01-09,https://www.baidu.com/link/checkout-error
+PROJ-008,Update user roles feature missing,"The functionality to update user roles is missing in the admin panel.",Medium,To Do,Michael Choi,2023-01-08,https://www.baidu.com/link/update-user-roles
+PROJ-009,API returning 500 error,"The /api/v1/users endpoint intermittently returns a 500 error, causing synchronization issues with third-party applications.",Critical,To Do,Alexa Lee,2023-01-07,https://www.baidu.com/link/api-500-error
+PROJ-010,Search bar not responsive,"The search bar does not respond on mobile devices, making it impossible to search for content.",Medium,In Progress,Anna Kim,2023-01-06,https://www.baidu.com/link/search-bar-issues
