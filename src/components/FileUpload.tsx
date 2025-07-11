@@ -174,7 +174,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded, isLoadin
       {/* Uploaded Files List */}
       {uploadedFiles.length > 0 && (
         <div className="space-y-2">
-          <h4 className="text-sm font-medium">Uploaded Files:</h4>
+          <h4 className="text-sm font-medium">{t('uploadedFiles', language)}</h4>
           <div className="space-y-2">
             {uploadedFiles.map((file, index) => (
               <div key={index} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">

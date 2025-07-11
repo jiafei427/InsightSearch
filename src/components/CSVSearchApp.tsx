@@ -24,6 +24,7 @@ export const CSVSearchApp: React.FC = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [columnWeights, setColumnWeights] = useState<Record<string, number>>({});
+  const [showAllColumns, setShowAllColumns] = useState(false);
 
   const handleFileUploaded = useCallback((data: CSVRow[]) => {
     setIsUploading(true);
@@ -99,7 +100,7 @@ export const CSVSearchApp: React.FC = () => {
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-4">
                 <FileText className="w-5 h-5 text-primary" />
-                <h2 className="text-xl font-semibold">Upload CSV File</h2>
+                <h2 className="text-xl font-semibold">{t('uploadCSVFile', language)}</h2>
               </div>
               <FileUpload 
                 onFileUploaded={handleFileUploaded} 
@@ -119,21 +120,21 @@ export const CSVSearchApp: React.FC = () => {
                     <FileText className="w-4 h-4 text-white" />
                   </div>
                   <div>
-                    <p className="font-medium">File loaded successfully</p>
+                    <p className="font-medium">{t('fileLoadedSuccessfully', language)}</p>
                     <p className="text-sm text-muted-foreground">
-                      {csvData.length} rows • {getColumnNames().length} columns
+                      {csvData.length} {t('rows', language)} • {getColumnNames().length} {t('columns', language)}
                     </p>
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {getColumnNames().slice(0, 6).map((column) => (
+                  {(showAllColumns ? getColumnNames() : getColumnNames().slice(0, 6)).map((column) => (
                     <Badge key={column} variant="secondary" className="text-xs">
                       {column}
                     </Badge>
                   ))}
-                  {getColumnNames().length > 6 && (
-                    <Badge variant="outline" className="text-xs">
-                      +{getColumnNames().length - 6} more
+                  {!showAllColumns && getColumnNames().length > 6 && (
+                    <Badge variant="outline" className="text-xs cursor-pointer" onClick={() => setShowAllColumns(true)}>
+                      +{getColumnNames().length - 6} {t('more', language)}
                     </Badge>
                   )}
                 </div>
@@ -148,7 +149,7 @@ export const CSVSearchApp: React.FC = () => {
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-4">
                 <Search className="w-5 h-5 text-primary" />
-                <h2 className="text-xl font-semibold">Search Your Data</h2>
+                <h2 className="text-xl font-semibold">{t('searchYourData', language)}</h2>
               </div>
               <AdvancedSearchBar 
                 onSearch={(query, options) => {

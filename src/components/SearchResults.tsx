@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { SearchResult } from '@/lib/csvUtils';
+import { useLanguage } from '@/hooks/useLanguage';
+import { t } from '@/lib/i18n';
 
 interface SearchResultsProps {
   results: SearchResult[];
@@ -121,6 +123,7 @@ const ResultCard: React.FC<{ result: SearchResult; index: number }> = ({ result,
 };
 
 export const SearchResults: React.FC<SearchResultsProps> = ({ results, isLoading }) => {
+  const { language } = useLanguage();
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
   const [currentPage, setCurrentPage] = useState(1);
   const resultsPerPage = 6;
@@ -147,8 +150,8 @@ export const SearchResults: React.FC<SearchResultsProps> = ({ results, isLoading
         <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
           <Star className="w-8 h-8 text-muted-foreground" />
         </div>
-        <h3 className="text-lg font-semibold mb-2">No results found</h3>
-        <p className="text-muted-foreground">Try adjusting your search terms or upload a different CSV file.</p>
+        <h3 className="text-lg font-semibold mb-2">{t('noResultsFound', language)}</h3>
+        <p className="text-muted-foreground">{t('noResultsDescription', language)}</p>
       </div>
     );
   }
@@ -158,10 +161,10 @@ export const SearchResults: React.FC<SearchResultsProps> = ({ results, isLoading
       {/* Results header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold">Search Results</h2>
+          <h2 className="text-xl font-semibold">{t('searchResults', language)}</h2>
           <p className="text-sm text-muted-foreground">
-            Found {results.length} {results.length === 1 ? 'result' : 'results'} 
-            {totalPages > 1 && ` • Page ${currentPage} of ${totalPages}`}
+            {t('found', language)} {results.length} {results.length === 1 ? t('result', language) : t('results', language)} 
+            {totalPages > 1 && ` • ${t('page', language)} ${currentPage} ${t('of', language)} ${totalPages}`}
           </p>
         </div>
         
@@ -172,7 +175,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({ results, isLoading
             onClick={() => setViewMode('cards')}
           >
             <Grid3X3 className="w-4 h-4 mr-2" />
-            Cards
+            {t('cards', language)}
           </Button>
           <Button
             variant={viewMode === 'table' ? 'default' : 'outline'}
@@ -180,7 +183,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({ results, isLoading
             onClick={() => setViewMode('table')}
           >
             <Table className="w-4 h-4 mr-2" />
-            Table
+            {t('table', language)}
           </Button>
         </div>
       </div>

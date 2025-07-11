@@ -23,6 +23,7 @@ export const translations = {
     rows: 'rows',
     columns: 'columns',
     files: 'files',
+    uploadedFiles: 'Uploaded Files',
     more: 'more',
     
     // Search
@@ -86,12 +87,14 @@ export const translations = {
     
     // Tags
     autoTags: 'Auto Tags',
-    generatedTags: 'Generated Tags'
+    generatedTags: 'Generated Tags',
+    valid: 'Valid',
+    invalid: 'Invalid'
   },
   ko: {
     // Header
     appName: '인사이트서치',
-    appDescription: 'CSV 파일을 업로드하고 고급 텍스트 유사성 알고리즘을 사용하여 데이터를 검색하세요. 지능적인 매칭으로 원하는 것을 정확히 찾아보세요.',
+    appDescription: 'CSV 파일을 업로드하고 고급 텍스트 유사성 알고리즘을 사용하여 데이터를 검색하세요.',
     
     // Features
     csvUpload: 'CSV 업로드',
@@ -106,10 +109,11 @@ export const translations = {
     fileUploadedSuccessfully: '파일이 성공적으로 업로드되었습니다!',
     
     // File Info
-    fileLoadedSuccessfully: '파일이 성공적으로 로드되었습니다',
+    fileLoadedSuccessfully: '파일 로딩 완료.',
     rows: '행',
     columns: '열',
     files: '파일',
+    uploadedFiles: '로딩 된 파일:',
     more: '개 더',
     
     // Search
@@ -130,8 +134,8 @@ export const translations = {
     noResultsDescription: '검색어를 조정하거나 다른 CSV 파일을 업로드해보세요.',
     
     // Views
-    cards: '카드',
-    table: '테이블',
+    cards: '카드뷰',
+    table: '테이블뷰',
     match: '일치',
     rank: '순위',
     title: '제목',
@@ -173,7 +177,9 @@ export const translations = {
     
     // Tags
     autoTags: '자동 태그',
-    generatedTags: '생성된 태그'
+    generatedTags: '생성된 태그',
+    valid: '유효함',
+    invalid: '유효하지 않음'
   }
 };
 
