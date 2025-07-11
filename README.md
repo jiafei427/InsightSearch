@@ -99,6 +99,3 @@ Got ideas or improvements? Contributions are welcome!
 MIT License – feel free to use, modify, and distribute.
 
 ---
-
-> Created with 💡 + 🤖 – Prompt-engineered AI meets powerful modern web stack.
-
