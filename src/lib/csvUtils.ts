@@ -2,6 +2,7 @@
 
 export interface CSVRow {
   [key: string]: string;
+  _fileName?: string; // Track which file this row came from
 }
 
 export interface SearchResult {
@@ -9,6 +10,18 @@ export interface SearchResult {
   score: number;
   highlightedTitle?: string;
   highlightedDescription?: string;
+}
+
+export interface ValidationResult {
+  isValid: boolean;
+  error?: string;
+  missingColumns?: string[];
+}
+
+export interface SearchOptions {
+  columnWeights?: Record<string, number>;
+  searchColumns?: string[];
+  fuzzySearch?: boolean;
 }
 
 // Text preprocessing utility
@@ -88,19 +101,41 @@ export const cosineSimilarity = (
   return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
 };
 
-// Main search function
+// Enhanced search function with column weights and fuzzy search
 export const searchCSV = (
   csvData: CSVRow[],
   query: string,
-  maxResults: number = 10
+  maxResults: number = 20,
+  options: SearchOptions = {}
 ): SearchResult[] => {
   if (!csvData.length || !query.trim()) return [];
 
-  // Combine title and description for search
+  const { columnWeights = {}, searchColumns = [], fuzzySearch = false } = options;
+
+  // Build documents with weighted content
   const documents = csvData.map(row => {
-    const title = row.title || row.Title || '';
-    const description = row.description || row.Description || '';
-    return `${title} ${description}`;
+    let content = '';
+    
+    if (searchColumns.length > 0) {
+      // Search only specified columns
+      searchColumns.forEach(col => {
+        const value = row[col] || '';
+        const weight = columnWeights[col] || 1;
+        // Repeat content based on weight for TF-IDF
+        content += Array(Math.ceil(weight)).fill(value).join(' ') + ' ';
+      });
+    } else {
+      // Search all relevant columns with weights
+      const title = row.title || row.Title || '';
+      const description = row.description || row.Description || '';
+      const titleWeight = columnWeights.title || columnWeights.Title || 2;
+      const descWeight = columnWeights.description || columnWeights.Description || 1;
+      
+      content = Array(Math.ceil(titleWeight)).fill(title).join(' ') + ' ' +
+                Array(Math.ceil(descWeight)).fill(description).join(' ');
+    }
+    
+    return content.trim();
   });
 
   // Add query as last document for comparison
@@ -119,7 +154,13 @@ export const searchCSV = (
     const docVector = tfidfVectors.get(i.toString());
     if (!docVector) continue;
 
-    const similarity = cosineSimilarity(queryVector, docVector);
+    let similarity = cosineSimilarity(queryVector, docVector);
+    
+    // Apply fuzzy search bonus
+    if (fuzzySearch) {
+      const fuzzyBonus = calculateFuzzyMatch(documents[i], query);
+      similarity = Math.max(similarity, fuzzyBonus * 0.3);
+    }
     
     if (similarity > 0.01) { // Minimum threshold
       results.push({
@@ -137,6 +178,44 @@ export const searchCSV = (
     .slice(0, maxResults);
 };
 
+// Fuzzy matching for typo tolerance
+export const calculateFuzzyMatch = (text: string, query: string): number => {
+  const textTerms = preprocessText(text);
+  const queryTerms = preprocessText(query);
+  
+  let matches = 0;
+  queryTerms.forEach(queryTerm => {
+    textTerms.forEach(textTerm => {
+      if (levenshteinDistance(queryTerm, textTerm) <= 2) {
+        matches++;
+      }
+    });
+  });
+  
+  return matches / Math.max(queryTerms.length, 1);
+};
+
+// Levenshtein distance for fuzzy matching
+export const levenshteinDistance = (str1: string, str2: string): number => {
+  const matrix = Array(str2.length + 1).fill(null).map(() => Array(str1.length + 1).fill(null));
+  
+  for (let i = 0; i <= str1.length; i++) matrix[0][i] = i;
+  for (let j = 0; j <= str2.length; j++) matrix[j][0] = j;
+  
+  for (let j = 1; j <= str2.length; j++) {
+    for (let i = 1; i <= str1.length; i++) {
+      const indicator = str1[i - 1] === str2[j - 1] ? 0 : 1;
+      matrix[j][i] = Math.min(
+        matrix[j][i - 1] + 1,      // deletion
+        matrix[j - 1][i] + 1,      // insertion
+        matrix[j - 1][i - 1] + indicator  // substitution
+      );
+    }
+  }
+  
+  return matrix[str2.length][str1.length];
+};
+
 // Text highlighting utility
 export const highlightText = (text: string, query: string): string => {
   if (!text || !query) return text;
@@ -152,22 +231,83 @@ export const highlightText = (text: string, query: string): string => {
   return highlightedText;
 };
 
-// CSV validation utility
-export const validateCSV = (data: CSVRow[]): { isValid: boolean; error?: string } => {
+// Enhanced CSV validation utility
+export const validateCSV = (data: CSVRow[], fileName?: string): ValidationResult => {
   if (!data || data.length === 0) {
-    return { isValid: false, error: 'CSV file is empty or invalid' };
+    return { 
+      isValid: false, 
+      error: `CSV file ${fileName ? `"${fileName}" ` : ''}is empty or invalid` 
+    };
   }
 
   const firstRow = data[0];
+  const columns = Object.keys(firstRow);
   const hasTitle = 'title' in firstRow || 'Title' in firstRow;
   const hasDescription = 'description' in firstRow || 'Description' in firstRow;
+  
+  const missingColumns: string[] = [];
+  const requiredColumns = ['title', 'description'];
+  
+  requiredColumns.forEach(col => {
+    const hasColumn = col in firstRow || col.charAt(0).toUpperCase() + col.slice(1) in firstRow;
+    if (!hasColumn) {
+      missingColumns.push(col);
+    }
+  });
 
   if (!hasTitle && !hasDescription) {
     return { 
       isValid: false, 
-      error: 'CSV must contain at least a "title" or "description" column' 
+      error: `CSV file ${fileName ? `"${fileName}" ` : ''}must contain at least a "title" or "description" column`,
+      missingColumns
     };
   }
 
   return { isValid: true };
+};
+
+// Combine multiple CSV datasets
+export const combineCSVData = (datasets: { data: CSVRow[]; fileName: string }[]): CSVRow[] => {
+  const combined: CSVRow[] = [];
+  
+  datasets.forEach(({ data, fileName }) => {
+    data.forEach(row => {
+      combined.push({ ...row, _fileName: fileName });
+    });
+  });
+  
+  return combined;
+};
+
+// Get all available columns from dataset
+export const getAvailableColumns = (data: CSVRow[]): string[] => {
+  if (data.length === 0) return [];
+  
+  const allColumns = new Set<string>();
+  data.forEach(row => {
+    Object.keys(row).forEach(key => {
+      if (key !== '_fileName') {
+        allColumns.add(key);
+      }
+    });
+  });
+  
+  return Array.from(allColumns).sort();
+};
+
+// Boolean search parser
+export const parseBooleanQuery = (query: string): { terms: string[]; operators: string[] } => {
+  const tokens = query.split(/\s+(AND|OR|NOT)\s+/i);
+  const terms: string[] = [];
+  const operators: string[] = [];
+  
+  for (let i = 0; i < tokens.length; i++) {
+    if (i % 2 === 0) {
+      terms.push(tokens[i].replace(/['"]/g, '').trim());
+    } else {
+      operators.push(tokens[i].toUpperCase());
+    }
+  }
+  
+  return { terms, operators };
 };

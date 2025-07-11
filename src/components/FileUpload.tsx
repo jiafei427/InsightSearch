@@ -1,49 +1,86 @@
 import React, { useCallback, useState } from 'react';
-import { Upload, FileText, AlertCircle } from 'lucide-react';
+import { Upload, FileText, AlertCircle, X } from 'lucide-react';
 import Papa from 'papaparse';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { CSVRow, validateCSV } from '@/lib/csvUtils';
+import { Badge } from '@/components/ui/badge';
+import { CSVRow, validateCSV, combineCSVData } from '@/lib/csvUtils';
+import { t } from '@/lib/i18n';
+import { useLanguage } from '@/hooks/useLanguage';
 
 interface FileUploadProps {
   onFileUploaded: (data: CSVRow[]) => void;
   isLoading: boolean;
 }
 
+interface FileData {
+  fileName: string;
+  data: CSVRow[];
+  isValid: boolean;
+  error?: string;
+}
+
 export const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded, isLoading }) => {
+  const { language } = useLanguage();
   const [dragActive, setDragActive] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [fileName, setFileName] = useState<string | null>(null);
+  const [uploadedFiles, setUploadedFiles] = useState<FileData[]>([]);
 
-  const handleFile = useCallback((file: File) => {
-    if (!file.name.toLowerCase().endsWith('.csv')) {
-      setError('Please upload a valid CSV file');
-      return;
-    }
-
+  const handleFiles = useCallback((files: FileList) => {
     setError(null);
-    setFileName(file.name);
+    const newFiles: FileData[] = [];
 
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: (results) => {
-        const validation = validateCSV(results.data as CSVRow[]);
-        
-        if (!validation.isValid) {
-          setError(validation.error || 'Invalid CSV file');
-          setFileName(null);
-          return;
-        }
-
-        onFileUploaded(results.data as CSVRow[]);
-      },
-      error: (error) => {
-        setError(`Error parsing CSV: ${error.message}`);
-        setFileName(null);
+    Array.from(files).forEach(file => {
+      if (!file.name.toLowerCase().endsWith('.csv')) {
+        setError(t('pleaseUploadValidCSV', language));
+        return;
       }
+
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: (results) => {
+          const validation = validateCSV(results.data as CSVRow[], file.name);
+          const fileData: FileData = {
+            fileName: file.name,
+            data: results.data as CSVRow[],
+            isValid: validation.isValid,
+            error: validation.error
+          };
+          
+          newFiles.push(fileData);
+          
+          // Update files when all are processed
+          if (newFiles.length === files.length) {
+            setUploadedFiles(prev => [...prev, ...newFiles]);
+            
+            // Combine all valid files and send to parent
+            const allValidFiles = [...uploadedFiles, ...newFiles].filter(f => f.isValid);
+            if (allValidFiles.length > 0) {
+              const combined = combineCSVData(allValidFiles.map(f => ({ data: f.data, fileName: f.fileName })));
+              onFileUploaded(combined);
+            }
+          }
+        },
+        error: (error) => {
+          setError(`Error parsing CSV: ${error.message}`);
+        }
+      });
     });
-  }, [onFileUploaded]);
+  }, [onFileUploaded, uploadedFiles, language]);
+
+  const removeFile = useCallback((fileName: string) => {
+    const updatedFiles = uploadedFiles.filter(f => f.fileName !== fileName);
+    setUploadedFiles(updatedFiles);
+    
+    if (updatedFiles.length > 0) {
+      const validFiles = updatedFiles.filter(f => f.isValid);
+      const combined = combineCSVData(validFiles.map(f => ({ data: f.data, fileName: f.fileName })));
+      onFileUploaded(combined);
+    } else {
+      onFileUploaded([]);
+    }
+  }, [uploadedFiles, onFileUploaded]);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -60,17 +97,17 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded, isLoadin
     e.stopPropagation();
     setDragActive(false);
 
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFile(e.dataTransfer.files[0]);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleFiles(e.dataTransfer.files);
     }
-  }, [handleFile]);
+  }, [handleFiles]);
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     e.preventDefault();
-    if (e.target.files && e.target.files[0]) {
-      handleFile(e.target.files[0]);
+    if (e.target.files && e.target.files.length > 0) {
+      handleFiles(e.target.files);
     }
-  }, [handleFile]);
+  }, [handleFiles]);
 
   return (
     <div className="w-full space-y-4">
@@ -88,6 +125,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded, isLoadin
         <input
           type="file"
           accept=".csv"
+          multiple
           onChange={handleChange}
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
           disabled={isLoading}
@@ -95,25 +133,29 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded, isLoadin
         
         <div className="space-y-4">
           <div className="mx-auto w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center shadow-soft">
-            {fileName ? (
+            {uploadedFiles.length > 0 ? (
               <FileText className="w-8 h-8 text-white" />
             ) : (
               <Upload className="w-8 h-8 text-white" />
             )}
           </div>
           
-          {fileName ? (
+          {uploadedFiles.length > 0 ? (
             <div className="space-y-2">
-              <p className="text-sm font-medium text-success">File uploaded successfully!</p>
-              <p className="text-xs text-muted-foreground">{fileName}</p>
+              <p className="text-sm font-medium text-success">
+                {t('fileUploadedSuccessfully', language)}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {uploadedFiles.length} {t('files', language)}
+              </p>
             </div>
           ) : (
             <div className="space-y-2">
               <p className="text-lg font-semibold text-foreground">
-                Drop your CSV file here
+                {t('dropFiles', language)}
               </p>
               <p className="text-sm text-muted-foreground">
-                or click to browse files
+                {t('orClickToBrowse', language)}
               </p>
             </div>
           )}
@@ -124,10 +166,44 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded, isLoadin
             disabled={isLoading}
             className="mt-4"
           >
-            Choose File
+            {t('chooseFiles', language)}
           </Button>
         </div>
       </div>
+
+      {/* Uploaded Files List */}
+      {uploadedFiles.length > 0 && (
+        <div className="space-y-2">
+          <h4 className="text-sm font-medium">Uploaded Files:</h4>
+          <div className="space-y-2">
+            {uploadedFiles.map((file, index) => (
+              <div key={index} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm">{file.fileName}</span>
+                  {file.isValid ? (
+                    <Badge variant="outline" className="text-xs bg-success/10 border-success/20">
+                      Valid
+                    </Badge>
+                  ) : (
+                    <Badge variant="destructive" className="text-xs">
+                      Invalid
+                    </Badge>
+                  )}
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => removeFile(file.fileName)}
+                  className="h-6 w-6 p-0"
+                >
+                  <X className="w-3 h-3" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {error && (
         <Alert variant="destructive">
@@ -137,8 +213,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded, isLoadin
       )}
 
       <div className="text-xs text-muted-foreground space-y-1">
-        <p>• CSV files must contain at least a "title" or "description" column</p>
-        <p>• Supported columns: title, description, priority, status, assignee, created date, etc.</p>
+        <p>{t('csvMustContain', language)}</p>
+        <p>{t('supportedColumns', language)}</p>
       </div>
     </div>
   );

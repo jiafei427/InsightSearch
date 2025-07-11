@@ -1,18 +1,29 @@
 import React, { useState, useCallback } from 'react';
 import { FileText, Search, Upload, Zap } from 'lucide-react';
 import { FileUpload } from './FileUpload';
-import { SearchBar } from './SearchBar';
+import { AdvancedSearchBar } from './AdvancedSearchBar';
 import { SearchResults } from './SearchResults';
-import { CSVRow, SearchResult, searchCSV } from '@/lib/csvUtils';
+import { DataInsightsDashboard } from './DataInsightsDashboard';
+import { ColumnRelevanceSettings } from './ColumnRelevanceSettings';
+import { LanguageToggle } from './LanguageToggle';
+import { ThemeToggle } from './ThemeToggle';
+import { CSVRow, SearchResult, searchCSV, getAvailableColumns } from '@/lib/csvUtils';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { t } from '@/lib/i18n';
+import { useLanguage } from '@/hooks/useLanguage';
+import { useTheme } from '@/hooks/useTheme';
 
 export const CSVSearchApp: React.FC = () => {
+  const { language } = useLanguage();
+  useTheme(); // Initialize theme
+  
   const [csvData, setCsvData] = useState<CSVRow[]>([]);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [columnWeights, setColumnWeights] = useState<Record<string, number>>({});
 
   const handleFileUploaded = useCallback((data: CSVRow[]) => {
     setIsUploading(true);
@@ -49,29 +60,32 @@ export const CSVSearchApp: React.FC = () => {
       {/* Header */}
       <div className="bg-gradient-primary text-white">
         <div className="container mx-auto px-4 py-12">
+          <div className="absolute top-4 right-4 flex gap-2">
+            <LanguageToggle />
+            <ThemeToggle />
+          </div>
           <div className="text-center space-y-4">
             <div className="flex items-center justify-center gap-3 mb-4">
               <div className="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
                 <FileText className="w-6 h-6" />
               </div>
-              <h1 className="text-3xl md:text-4xl font-bold">CSV Search Engine</h1>
+              <h1 className="text-3xl md:text-4xl font-bold">{t('appName', language)}</h1>
             </div>
             <p className="text-lg text-white/90 max-w-2xl mx-auto">
-              Upload your CSV file and search through your data using advanced text similarity algorithms. 
-              Find exactly what you're looking for with intelligent matching.
+              {t('appDescription', language)}
             </p>
             <div className="flex items-center justify-center gap-6 text-sm text-white/80">
               <div className="flex items-center gap-2">
                 <Upload className="w-4 h-4" />
-                <span>CSV Upload</span>
+                <span>{t('csvUpload', language)}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Zap className="w-4 h-4" />
-                <span>Smart Search</span>
+                <span>{t('smartSearch', language)}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Search className="w-4 h-4" />
-                <span>Real-time Results</span>
+                <span>{t('realTimeResults', language)}</span>
               </div>
             </div>
           </div>
@@ -136,10 +150,24 @@ export const CSVSearchApp: React.FC = () => {
                 <Search className="w-5 h-5 text-primary" />
                 <h2 className="text-xl font-semibold">Search Your Data</h2>
               </div>
-              <SearchBar 
-                onSearch={handleSearch} 
+              <AdvancedSearchBar 
+                onSearch={(query, options) => {
+                  if (!csvData.length) return;
+                  setIsSearching(true);
+                  setHasSearched(true);
+                  setTimeout(() => {
+                    const results = searchCSV(csvData, query, 20, {
+                      columnWeights,
+                      searchColumns: options.searchColumns,
+                      fuzzySearch: options.fuzzySearch
+                    });
+                    setSearchResults(results);
+                    setIsSearching(false);
+                  }, 800);
+                }}
                 isLoading={isSearching}
                 disabled={csvData.length === 0}
+                availableColumns={getAvailableColumns(csvData)}
               />
             </div>
           </CardContent>
