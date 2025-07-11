@@ -1,28 +1,52 @@
-# Welcome to your Lovable project
+# InsightSearch 🔍
 
-## Project info
+**InsightSearch** is an advanced, responsive web application designed to help users **search, visualize, and analyze CSV data** using modern similarity algorithms. With support for **semantic search**, **multi-file uploads**, **custom relevance weighting**, and a **rich UI/UX**, InsightSearch is your smart assistant for navigating complex CSV datasets.
 
-**URL**: https://lovable.dev/projects/dbdc88a1-d528-479c-877d-eee042056542
+---
 
-## How can I edit this code?
+## 🌟 Features
 
-There are several ways of editing your application.
+### 🔄 File Upload & Validation
+- Upload one or **multiple CSV files** at once.
+- Validate files for required fields (e.g., `Title`, `Description`).
+- Provide detailed feedback on invalid or incomplete files.
 
-**Use Lovable**
+### 🔍 Intelligent Search Engine
+- Enter **natural language queries** to find relevant rows from your data.
+- Choose between **TF-IDF** (simple) or **BERT-based embeddings** (advanced) for similarity matching.
+- Customize column relevance (e.g., prioritize `Title` over `Description`).
+- Support for **English** and **Korean** search queries and interface.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/dbdc88a1-d528-479c-877d-eee042056542) and start prompting.
+### 📊 Visualization Dashboard
+- View auto-generated **charts** and **graphs** like:
+  - Pie chart of `Priority`
+  - Bar chart of `Status`
+  - Timeline of `Created Date`
 
-Changes made via Lovable will be committed automatically to this repo.
+### 🧠 Auto Tagging & Grouping
+- Automatically generate intelligent **tags** for each row (e.g., `#login-error`, `#UI-issue`).
+- Group similar issues by topic, status, or priority.
 
-**Use your preferred IDE**
+### ⚙️ Advanced Search Options
+- **Multi-column search** (e.g., Title-only, Assignee-only).
+- **Boolean search**: AND, OR, quoted phrases.
+- **Fuzzy search** for typo tolerance.
+- **Dynamic filters**: by `priority`, `status`, `assignee`, or `date`.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### 💡 UI/UX Enhancements
+- **Responsive Design** (Mobile + Desktop friendly).
+- Switch between **Card** and **Table (Grid)** views.
+- **Resizable, sortable, and rearrangeable** result columns.
+- **Dark Mode** toggle support.
+- Highlight matched keywords in results.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+---
 
-Follow these steps:
+## 🚀 Getting Started
 
-```sh
+Follow these steps to run the project locally:
+
+```bash
 # Step 1: Clone the repository using the project's Git URL.
 git clone <YOUR_GIT_URL>
 
@@ -36,38 +60,45 @@ npm i
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+---
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
+## 💻 Technologies Used
 
 This project is built with:
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+- [**Vite**](https://vitejs.dev/) – Lightning-fast frontend build tool
+- [**TypeScript**](https://www.typescriptlang.org/) – Strongly typed JavaScript
+- [**React**](https://reactjs.org/) – UI library for building components
+- [**shadcn/ui**](https://ui.shadcn.com/) – Beautifully designed accessible components
+- [**Tailwind CSS**](https://tailwindcss.com/) – Utility-first CSS framework
 
-## How can I deploy this project?
+---
 
-Simply open [Lovable](https://lovable.dev/projects/dbdc88a1-d528-479c-877d-eee042056542) and click on Share -> Publish.
+## 🌐 Multilingual Support
 
-## Can I connect a custom domain to my Lovable project?
+- The website supports **both Korean and English**.
+- Easily switch languages via a language selector.
 
-Yes, you can!
+---
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## 📦 Future Improvements (Ideas)
+- CSV-to-JSON Export for filtered results.
+- Integration with APIs (e.g., bug tracker or GitHub issues).
+- User accounts and saved searches.
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+---
+
+## 📣 Contribute
+
+Got ideas or improvements? Contributions are welcome!
+
+---
+
+## 📄 License
+
+MIT License – feel free to use, modify, and distribute.
+
+---
+
+> Created with 💡 + 🤖 – Prompt-engineered AI meets powerful modern web stack.
+
