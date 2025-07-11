@@ -25,10 +25,40 @@ export interface SearchOptions {
 }
 
 // Text preprocessing utility
+// Detect Korean characters (Hangul syllables)
+const hasKorean = (str: string): boolean => /[\uac00-\ud7af]/.test(str);
+
+const generateNGrams = (str: string, n: number): string[] => {
+  const tokens: string[] = [];
+  if (str.length < n) return tokens;
+  for (let i = 0; i <= str.length - n; i++) {
+    tokens.push(str.slice(i, i + n));
+  }
+  return tokens;
+};
+
+// Text preprocessing utility – now Korean-aware
 export const preprocessText = (text: string): string[] => {
-  return text
+  if (!text) return [];
+
+  // 1. Normalise & strip punctuation
+  const cleaned = text
     .toLowerCase()
-    .replace(/[^\w\s]/g, ' ')
+    .replace(/[\p{P}\p{S}]+/gu, ' ') // remove punctuation (unicode-aware)
+    .trim();
+
+  // 2. If Korean present use character n-grams (bi- & tri-grams) for better recall
+  if (hasKorean(cleaned)) {
+    // remove whitespace for n-gram generation
+    const compact = cleaned.replace(/\s+/g, '');
+    return [
+      ...generateNGrams(compact, 2),
+      ...generateNGrams(compact, 3),
+    ];
+  }
+
+  // 3. Default Latin/whitespace tokenisation
+  return cleaned
     .split(/\s+/)
     .filter(word => word.length > 2);
 };

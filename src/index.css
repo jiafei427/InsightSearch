@@ -124,4 +124,12 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Highlighted search terms */
+  mark {
+    @apply text-foreground;
+  }
+  .dark mark {
+    color: #3bfca9; /* neon green for better visibility in dark mode */
+  }
 }

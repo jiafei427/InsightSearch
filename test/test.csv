@@ -9,3 +9,13 @@ PROJ-007,Error on checkout page,"An exception occurs during checkout with certai
 PROJ-008,Update user roles feature missing,"The functionality to update user roles is missing in the admin panel.",Medium,To Do,Michael Choi,2023-01-08,https://www.baidu.com/link/update-user-roles
 PROJ-009,API returning 500 error,"The /api/v1/users endpoint intermittently returns a 500 error, causing synchronization issues with third-party applications.",Critical,To Do,Alexa Lee,2023-01-07,https://www.baidu.com/link/api-500-error
 PROJ-010,Search bar not responsive,"The search bar does not respond on mobile devices, making it impossible to search for content.",Medium,In Progress,Anna Kim,2023-01-06,https://www.baidu.com/link/search-bar-issues
+PROJ-011,로그인 페이지 오류,"사용자가 로그인 시 '알 수 없는 오류' 메시지가 나타납니다.",High,To Do,Min Park,2023-01-05,https://www.baidu.com/link/login-kor-error
+PROJ-012,홈페이지 로딩 지연,"홈페이지 로딩이 15초 이상 걸려 사용자 경험이 저하됩니다.",Medium,In Progress,Seo Hyun,2023-01-04,https://www.baidu.com/link/homepage-slow-kr
+PROJ-013,회원가입 중복 이메일 검사 실패,"이미 등록된 이메일로 회원가입이 가능하여 중복 계정이 생성됩니다.",High,Open,Jiho Lee,2023-01-03,https://www.baidu.com/link/signup-dup-email
+PROJ-014,모바일 프로필 사진 깨짐,"모바일에서 프로필 사진이 비율에 맞지 않게 표시됩니다.",Low,To Do,Eun Jung,2023-01-02,https://www.baidu.com/link/profile-image-mobile
+PROJ-015,비밀번호 재설정 링크 만료 오류,"비밀번호 재설정 링크가 즉시 만료되어 사용자가 재설정할 수 없습니다.",Critical,In Review,Young Choi,2023-01-01,https://www.baidu.com/link/reset-link-expire
+PROJ-016,다크 모드 텍스트 가독성 문제,"다크 모드에서 버튼 텍스트가 배경과 구분되지 않습니다.",Low,Done,Dae Kim,2022-12-31,https://www.baidu.com/link/darkmode-text
+PROJ-017,결제 페이지 한글 깨짐,"결제 페이지에서 한글이 '?' 문자로 표시됩니다.",High,Open,Ha Neul,2022-12-30,https://www.baidu.com/link/payment-kor-encoding
+PROJ-018,관리자 권한 변경 기능 오류,"관리자 페이지에서 사용자 권한을 변경해도 저장되지 않습니다.",Medium,To Do,Jinwoo Park,2022-12-29,https://www.baidu.com/link/admin-role-fail
+PROJ-019,API 한글 데이터 손상,"/api/v1/products 엔드포인트에서 한글 설명이 깨져서 반환됩니다.",Critical,To Do,Soojin Han,2022-12-28,https://www.baidu.com/link/api-kor-data
+PROJ-020,검색바 한글 입력 오류,"검색바에 한글 입력 시 초성만 남고 사라지는 현상이 있습니다.",Medium,In Progress,Yuna Lee,2022-12-27,https://www.baidu.com/link/searchbar-kor

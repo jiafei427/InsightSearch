@@ -15,7 +15,9 @@ interface SearchResultsProps {
 const getPriorityColor = (priority: string | undefined) => {
   if (!priority) return 'bg-muted';
   const p = priority.toLowerCase();
-  if (p.includes('high') || p.includes('urgent')) return 'bg-destructive';
+  if (p.includes('critical')) return 'bg-destructive text-white';
+  if (p.includes('high')) return 'bg-orange-500 text-white';
+  if (p.includes('urgent')) return 'bg-destructive/70 text-white';
   if (p.includes('medium')) return 'bg-warning';
   if (p.includes('low')) return 'bg-success';
   return 'bg-muted';
@@ -30,8 +32,11 @@ const getStatusColor = (status: string | undefined) => {
   return 'bg-muted';
 };
 
-const ResultCard: React.FC<{ result: SearchResult; index: number }> = ({ result, index }) => {
+// Card view is secondary now but keep component
+const ResultCard: React.FC<{ result: SearchResult; index: number; maxScore: number }> = ({ result, index, maxScore }) => {
   const { row, score, highlightedTitle, highlightedDescription } = result;
+  const percent = Math.round((score / (maxScore || 1)) * 100);
+  const issueKey = (row['Issue Key'] as string) || (row.issueKey as string) || (row.IssueKey as string);
   
   return (
     <Card className="group hover:shadow-medium transition-all duration-200 hover:-translate-y-1 bg-gradient-card border-border/50">
@@ -41,7 +46,7 @@ const ResultCard: React.FC<{ result: SearchResult; index: number }> = ({ result,
             <div className="flex items-center gap-2 mb-2">
               <span className="text-xs font-medium text-muted-foreground">#{index + 1}</span>
               <Badge variant="outline" className="text-xs">
-                {Math.round(score * 100)}% match
+                {percent}% match
               </Badge>
             </div>
             <h3 
@@ -67,6 +72,24 @@ const ResultCard: React.FC<{ result: SearchResult; index: number }> = ({ result,
           />
         )}
         
+        {(() => {
+          const link = (row.baidu_link || row['baidu_link']) as string | undefined;
+          const desc = (row.description || row.Description || '') as string;
+          return link && !desc.includes(link) ? (
+            <div className="text-xs">
+              <span className="font-medium text-muted-foreground mr-1">baidu_link:</span>
+              <a
+                href={link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary underline break-all"
+              >
+                {link}
+              </a>
+            </div>
+          ) : null;
+        })()}
+
         <div className="flex flex-wrap gap-2">
           {(row.priority || row.Priority) && (
             <div className="flex items-center gap-1">
@@ -84,6 +107,20 @@ const ResultCard: React.FC<{ result: SearchResult; index: number }> = ({ result,
                 {row.status || row.Status}
               </Badge>
             </div>
+          )}
+          
+          {issueKey && (
+            <div className="text-xs flex items-center gap-1">
+               <span className="font-medium text-muted-foreground">Issue Key:</span>
+               <a
+                 href={`https://mcols.autoever.com/${issueKey}`}
+                 target="_blank"
+                 rel="noopener noreferrer"
+                 className="underline hover:text-primary"
+               >
+                 {issueKey}
+               </a>
+             </div>
           )}
           
           {(row.assignee || row.Assignee) && (
@@ -108,7 +145,7 @@ const ResultCard: React.FC<{ result: SearchResult; index: number }> = ({ result,
         {/* Additional fields */}
         <div className="grid grid-cols-2 gap-2 text-xs">
           {Object.entries(row)
-            .filter(([key]) => !['title', 'Title', 'description', 'Description', 'priority', 'Priority', 'status', 'Status', 'assignee', 'Assignee', 'created', 'Created', 'created date', 'Created Date'].includes(key))
+            .filter(([key]) => !['title', 'Title', 'description', 'Description', 'priority', 'Priority', 'status', 'Status', 'assignee', 'Assignee', 'created', 'Created', 'created date', 'Created Date', 'baidu_link', 'baiduLink', 'baidu link', 'Baidu Link', 'Baidu_Link'].includes(key))
             .slice(0, 4)
             .map(([key, value]) => (
               <div key={key} className="truncate">
@@ -123,10 +160,11 @@ const ResultCard: React.FC<{ result: SearchResult; index: number }> = ({ result,
 };
 
 export const SearchResults: React.FC<SearchResultsProps> = ({ results, isLoading }) => {
+  const maxScore = results.reduce((max, r) => Math.max(max, r.score), 0);
   const { language } = useLanguage();
-  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('table');
   const [currentPage, setCurrentPage] = useState(1);
-  const resultsPerPage = 6;
+  const resultsPerPage = 20;
 
   const totalPages = Math.ceil(results.length / resultsPerPage);
   const startIndex = (currentPage - 1) * resultsPerPage;
@@ -192,11 +230,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({ results, isLoading
       {viewMode === 'cards' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {currentResults.map((result, index) => (
-            <ResultCard 
-              key={startIndex + index} 
-              result={result} 
-              index={startIndex + index} 
-            />
+            <ResultCard key={index} result={result} index={index} maxScore={maxScore} />
           ))}
         </div>
       ) : (
@@ -207,6 +241,9 @@ export const SearchResults: React.FC<SearchResultsProps> = ({ results, isLoading
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Rank
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    Issue
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Title
@@ -229,12 +266,27 @@ export const SearchResults: React.FC<SearchResultsProps> = ({ results, isLoading
                 {currentResults.map((result, index) => (
                   <tr key={startIndex + index} className="hover:bg-muted/50">
                     <td className="px-4 py-3 text-sm">#{startIndex + index + 1}</td>
-                    <td 
-                      className="px-4 py-3 text-sm font-medium"
-                      dangerouslySetInnerHTML={{ 
-                        __html: result.highlightedTitle || result.row.title || result.row.Title || 'Untitled' 
-                      }}
-                    />
+                     <td className="px-4 py-3 text-sm">
+                       {(() => {
+                         const key = result.row['Issue Key'] || result.row.issueKey || result.row.IssueKey;
+                         return key ? (
+                           <a
+                             href={`https://mcols.autoever.com/${key}`}
+                             target="_blank"
+                             rel="noopener noreferrer"
+                             className="text-primary underline break-all"
+                           >
+                             {key}
+                           </a>
+                         ) : '-';
+                       })()}
+                     </td>
+                     <td
+                       className="px-4 py-3 text-sm font-medium max-w-xs truncate"
+                       dangerouslySetInnerHTML={{
+                         __html: result.highlightedTitle || result.row.title || result.row.Title || 'Untitled',
+                       }}
+                     />
                     <td 
                       className="px-4 py-3 text-sm text-muted-foreground max-w-xs truncate"
                       dangerouslySetInnerHTML={{ 
@@ -257,7 +309,7 @@ export const SearchResults: React.FC<SearchResultsProps> = ({ results, isLoading
                     </td>
                     <td className="px-4 py-3 text-sm">
                       <Badge variant="outline" className="text-xs">
-                        {Math.round(result.score * 100)}%
+                        {Math.round((result.score / (maxScore || 1)) * 100)}%
                       </Badge>
                     </td>
                   </tr>
