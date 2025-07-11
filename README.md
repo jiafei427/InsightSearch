@@ -48,10 +48,10 @@ Follow these steps to run the project locally:
 
 ```bash
 # Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+git clone https://github.com/jiafei427/smart-csv-finder.git 
 
 # Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+cd smart-csv-finder 
 
 # Step 3: Install the necessary dependencies.
 npm i
