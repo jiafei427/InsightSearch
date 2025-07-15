@@ -37,30 +37,78 @@ const generateNGrams = (str: string, n: number): string[] => {
   return tokens;
 };
 
-// Text preprocessing utility – now Korean-aware
-export const preprocessText = (text: string): string[] => {
-  if (!text) return [];
+// --- Synonym dictionary for expansion ---
+const SYNONYMS: Record<string, string[]> = {
+  bug: ['issue', 'error', 'problem', 'defect'],
+  issue: ['bug', 'error', 'problem', 'defect'],
+  error: ['bug', 'issue', 'problem', 'defect'],
+  feature: ['enhancement', 'improvement'],
+  open: ['active', 'in progress'],
+  closed: ['resolved', 'done', 'complete'],
+  // Add more as needed
+};
 
-  // 1. Normalise & strip punctuation
+function expandSynonyms(term: string): string[] {
+  const lower = term.toLowerCase();
+  return [lower, ...(SYNONYMS[lower] || [])];
+}
+
+// --- Language detection stub (expand for real use) ---
+function detectLanguage(text: string): string {
+  // Simple stub: detect Korean, else 'en'
+  return /[\uac00-\ud7af]/.test(text) ? 'ko' : 'en';
+}
+
+// --- Advanced query parsing (field, boolean) ---
+function parseAdvancedQuery(query: string) {
+  // Example: status:open AND priority:A
+  // Returns: { terms: [{field, value}], operators: ['AND', ...] }
+  const tokens = query.split(/\s+(AND|OR|NOT)\s+/i);
+  const terms: { field?: string; value: string }[] = [];
+  const operators: string[] = [];
+  for (let i = 0; i < tokens.length; i++) {
+    if (i % 2 === 0) {
+      const match = tokens[i].match(/(\w+):(.*)/);
+      if (match) {
+        terms.push({ field: match[1].toLowerCase(), value: match[2].trim() });
+      } else {
+        terms.push({ value: tokens[i].trim() });
+      }
+    } else {
+      operators.push(tokens[i].toUpperCase());
+    }
+  }
+  return { terms, operators };
+}
+
+// --- Preprocessing with synonym and prefix expansion ---
+export const preprocessText = (text: string, expand = true): string[] => {
+  if (!text) return [];
   const cleaned = text
     .toLowerCase()
-    .replace(/[\p{P}\p{S}]+/gu, ' ') // remove punctuation (unicode-aware)
+    .replace(/[\p{P}\p{S}]+/gu, ' ')
     .trim();
-
-  // 2. If Korean present use character n-grams (bi- & tri-grams) for better recall
+  let tokens: string[] = [];
   if (hasKorean(cleaned)) {
-    // remove whitespace for n-gram generation
     const compact = cleaned.replace(/\s+/g, '');
-    return [
+    tokens = [
       ...generateNGrams(compact, 2),
       ...generateNGrams(compact, 3),
     ];
+  } else {
+    tokens = cleaned.split(/\s+/).filter(word => word.length > 2);
   }
-
-  // 3. Default Latin/whitespace tokenisation
-  return cleaned
-    .split(/\s+/)
-    .filter(word => word.length > 2);
+  if (expand) {
+    // Synonym and prefix expansion
+    let expanded: string[] = [];
+    tokens.forEach(token => {
+      expanded = expanded.concat(expandSynonyms(token));
+      // Add prefix (first 3+ chars) for partial match
+      if (token.length > 3) expanded.push(token.slice(0, 3));
+    });
+    return Array.from(new Set(expanded));
+  }
+  return tokens;
 };
 
 // TF-IDF based similarity calculation
@@ -131,7 +179,25 @@ export const cosineSimilarity = (
   return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
 };
 
-// Enhanced search function with column weights and fuzzy search
+// --- Semantic search stub (for future embedding integration) ---
+async function getEmbeddings(texts: string[]): Promise<number[][]> {
+  // Placeholder: integrate with OpenAI, Cohere, or local model
+  // Return dummy vectors for now
+  return texts.map(() => Array(384).fill(0));
+}
+
+function cosineSimArr(a: number[], b: number[]): number {
+  let dot = 0, normA = 0, normB = 0;
+  for (let i = 0; i < a.length; i++) {
+    dot += a[i] * b[i];
+    normA += a[i] * a[i];
+    normB += b[i] * b[i];
+  }
+  if (normA === 0 || normB === 0) return 0;
+  return dot / (Math.sqrt(normA) * Math.sqrt(normB));
+}
+
+// --- Enhanced searchCSV ---
 export const searchCSV = (
   csvData: CSVRow[],
   query: string,
@@ -139,73 +205,97 @@ export const searchCSV = (
   options: SearchOptions = {}
 ): SearchResult[] => {
   if (!csvData.length || !query.trim()) return [];
+  const { columnWeights = {}, searchColumns = [], fuzzySearch = false, useEmbeddings = false, language = undefined } = options as any;
 
-  const { columnWeights = {}, searchColumns = [], fuzzySearch = false } = options;
+  // --- Language filtering (optional) ---
+  let filteredData = csvData;
+  if (language) {
+    filteredData = csvData.filter(row => {
+      const text = row.title || row.Title || row.description || row.Description || '';
+      return detectLanguage(text) === language;
+    });
+  }
 
-  // Build documents with weighted content
-  const documents = csvData.map(row => {
+  // --- Advanced query parsing ---
+  const { terms, operators } = parseAdvancedQuery(query);
+
+  // --- Document construction with field boosting ---
+  const documents = filteredData.map(row => {
     let content = '';
-    
     if (searchColumns.length > 0) {
-      // Search only specified columns
       searchColumns.forEach(col => {
         const value = row[col] || '';
         const weight = columnWeights[col] || 1;
-        // Repeat content based on weight for TF-IDF
         content += Array(Math.ceil(weight)).fill(value).join(' ') + ' ';
       });
     } else {
-      // Search all relevant columns with weights
+      // Default: title and description
       const title = row.title || row.Title || '';
       const description = row.description || row.Description || '';
       const titleWeight = columnWeights.title || columnWeights.Title || 2;
       const descWeight = columnWeights.description || columnWeights.Description || 1;
-      
       content = Array(Math.ceil(titleWeight)).fill(title).join(' ') + ' ' +
                 Array(Math.ceil(descWeight)).fill(description).join(' ');
     }
-    
     return content.trim();
   });
 
-  // Add query as last document for comparison
-  documents.push(query);
+  // --- Semantic search (stub, fallback to TF-IDF) ---
+  // if (useEmbeddings) {
+  //   // Example: get embeddings for all docs and query, then use cosineSimArr
+  //   // Not implemented: requires async/await and external API
+  // }
 
-  // Calculate TF-IDF vectors
+  // --- TF-IDF + Cosine Similarity ---
+  documents.push(query);
   const tfidfVectors = calculateTFIDF(documents);
   const queryVector = tfidfVectors.get((documents.length - 1).toString());
-
   if (!queryVector) return [];
 
-  // Calculate similarities
+  // --- Boolean/field query logic ---
   const results: SearchResult[] = [];
-  
-  for (let i = 0; i < csvData.length; i++) {
+  for (let i = 0; i < filteredData.length; i++) {
     const docVector = tfidfVectors.get(i.toString());
     if (!docVector) continue;
-
     let similarity = cosineSimilarity(queryVector, docVector);
-    
-    // Apply fuzzy search bonus
+    // Fuzzy search bonus
     if (fuzzySearch) {
       const fuzzyBonus = calculateFuzzyMatch(documents[i], query);
       similarity = Math.max(similarity, fuzzyBonus * 0.3);
     }
-    
-    if (similarity > 0.01) { // Minimum threshold
+    // Boolean/field query filtering
+    let matches = true;
+    let lastOp = 'AND';
+    for (let t = 0; t < terms.length; t++) {
+      const { field, value } = terms[t];
+      let fieldMatch = false;
+      if (field) {
+        const rowVal = (filteredData[i][field] || '').toLowerCase();
+        fieldMatch = rowVal.includes(value.toLowerCase());
+      } else {
+        // General term: check in title/desc
+        const text = (filteredData[i].title || filteredData[i].Title || '') + ' ' + (filteredData[i].description || filteredData[i].Description || '');
+        fieldMatch = text.toLowerCase().includes(value.toLowerCase());
+      }
+      if (t === 0) {
+        matches = fieldMatch;
+      } else {
+        if (operators[t - 1] === 'AND') matches = matches && fieldMatch;
+        if (operators[t - 1] === 'OR') matches = matches || fieldMatch;
+        if (operators[t - 1] === 'NOT') matches = matches && !fieldMatch;
+      }
+    }
+    if (!matches) continue;
+    if (similarity > 0.01) {
       results.push({
-        row: csvData[i],
+        row: filteredData[i],
         score: similarity,
-        highlightedTitle: highlightText(csvData[i].title || csvData[i].Title || '', query),
-        highlightedDescription: highlightText(csvData[i].description || csvData[i].Description || '', query)
+        highlightedTitle: highlightText(filteredData[i].title || filteredData[i].Title || '', query),
+        highlightedDescription: highlightText(filteredData[i].description || filteredData[i].Description || '', query)
       });
     }
   }
-
-  // Sort by similarity score and return top results
-  return results
-    .sort((a, b) => b.score - a.score)
-    .slice(0, maxResults);
+  return results.sort((a, b) => b.score - a.score).slice(0, maxResults);
 };
 
 // Fuzzy matching for typo tolerance

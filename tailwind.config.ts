@@ -2,6 +2,18 @@ import type { Config } from "tailwindcss";
 
 export default {
 	darkMode: ["class"],
+	// Safelist for priority badge colors
+	safelist: [
+		"bg-red-600",
+		"bg-orange-500",
+		"bg-pink-600",
+		"bg-yellow-400",
+		"bg-green-500",
+		"text-white",
+		"text-black",
+		"bg-muted",
+		"text-foreground"
+	],
 	content: [
 		"./pages/**/*.{ts,tsx}",
 		"./components/**/*.{ts,tsx}",

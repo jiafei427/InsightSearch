@@ -40,10 +40,22 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onFileUploaded, isLoadin
         header: true,
         skipEmptyLines: true,
         complete: (results) => {
-          const validation = validateCSV(results.data as CSVRow[], file.name);
+          // Normalize keys for each row
+          const normalizedData = (results.data as CSVRow[]).map(row => {
+            const newRow = { ...row };
+            if ('Issue key' in newRow) {
+              newRow.issueKey = newRow['Issue key'];
+            }
+            if ('Summary' in newRow) {
+              newRow.title = newRow['Summary'];
+            }
+            return newRow;
+          });
+
+          const validation = validateCSV(normalizedData, file.name);
           const fileData: FileData = {
             fileName: file.name,
-            data: results.data as CSVRow[],
+            data: normalizedData,
             isValid: validation.isValid,
             error: validation.error
           };

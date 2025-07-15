@@ -13,14 +13,13 @@ interface SearchResultsProps {
 }
 
 const getPriorityColor = (priority: string | undefined) => {
-  if (!priority) return 'bg-muted';
-  const p = priority.toLowerCase();
-  if (p.includes('critical')) return 'bg-destructive text-white';
-  if (p.includes('high')) return 'bg-orange-500 text-white';
-  if (p.includes('urgent')) return 'bg-destructive/70 text-white';
-  if (p.includes('medium')) return 'bg-warning';
-  if (p.includes('low')) return 'bg-success';
-  return 'bg-muted';
+  if (!priority) return 'bg-muted text-foreground';
+  const priorityLetter = priority.trim().toUpperCase();
+  if (priorityLetter === 'A') return 'bg-red-600 text-white';
+  if (priorityLetter === 'B') return 'bg-orange-500 text-white';
+  if (priorityLetter === 'C') return 'bg-yellow-400 text-black';
+  if (priorityLetter === 'D') return 'bg-green-500 text-white';
+  return 'bg-muted text-foreground';
 };
 
 const getStatusColor = (status: string | undefined) => {
@@ -32,128 +31,72 @@ const getStatusColor = (status: string | undefined) => {
   return 'bg-muted';
 };
 
+// Utility to get the first language block (split by double newlines or a separator)
+const getFirstBlock = (text: string) => {
+  if (!text) return '';
+  // Try to split by two or more newlines, or fallback to first 200 chars
+  const blocks = text.split(/\n{2,}/);
+  return blocks[0] || text.slice(0, 200);
+};
+
 // Card view is secondary now but keep component
 const ResultCard: React.FC<{ result: SearchResult; index: number; maxScore: number }> = ({ result, index, maxScore }) => {
   const { row, score, highlightedTitle, highlightedDescription } = result;
   const percent = Math.round((score / (maxScore || 1)) * 100);
   const issueKey = (row['Issue Key'] as string) || (row.issueKey as string) || (row.IssueKey as string);
-  
+  const priority = row.priority || row.Priority;
+  const status = row.status || row.Status;
+  const assignee = row.assignee || row.Assignee;
+  const created = row.created || row.Created || row['created date'] || row['Created Date'];
+  const descriptionRaw = row.description || row.Description || '';
+  const [showMore, setShowMore] = useState(false);
+  const descBlock = getFirstBlock(descriptionRaw);
+  const descToShow = showMore ? descriptionRaw : descBlock.slice(0, 200);
+  const isTruncated = descriptionRaw.length > descToShow.length;
+
   return (
     <Card className="group hover:shadow-medium transition-all duration-200 hover:-translate-y-1 bg-gradient-card border-border/50">
       <CardHeader className="pb-3">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-xs font-medium text-muted-foreground">#{index + 1}</span>
-              <Badge variant="outline" className="text-xs">
-                {percent}% match
-              </Badge>
-            </div>
-            <h3 
-              className="font-semibold text-lg leading-tight text-foreground group-hover:text-primary transition-colors"
-              dangerouslySetInnerHTML={{ 
-                __html: highlightedTitle || row.title || row.Title || 'Untitled' 
-              }}
-            />
+        <div className="flex items-center justify-between gap-3 mb-2">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-muted-foreground">#{index + 1}</span>
+            <Badge variant="outline" className="text-xs">{percent}% match</Badge>
+            {priority && (
+              <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${getPriorityColor(priority)}`}>{priority}</span>
+            )}
+            {status && (
+              <Badge variant="outline" className="text-xs">{status}</Badge>
+            )}
+            {assignee && (
+              <Badge variant="secondary" className="text-xs">{assignee}</Badge>
+            )}
+            {created && (
+              <span className="text-xs text-muted-foreground">{created}</span>
+            )}
+            {issueKey && (
+              <a href={`https://mcols.autoever.com/${issueKey}`} target="_blank" rel="noopener noreferrer" className="text-primary underline text-xs font-medium ml-2">{issueKey}</a>
+            )}
           </div>
-          <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
-            <MoreHorizontal className="w-4 h-4" />
-          </Button>
         </div>
+        <h3
+          className="font-semibold text-lg leading-tight text-foreground group-hover:text-primary transition-colors"
+          dangerouslySetInnerHTML={{
+            __html: getFirstBlock(highlightedTitle || row.title || row.Title || 'Untitled'),
+          }}
+        />
       </CardHeader>
-      
-      <CardContent className="space-y-4">
-        {(row.description || row.Description) && (
-          <div 
-            className="text-sm text-muted-foreground leading-relaxed"
-            dangerouslySetInnerHTML={{ 
-              __html: highlightedDescription || row.description || row.Description || '' 
-            }}
-          />
+      <CardContent className="space-y-2">
+        {descToShow && (
+          <div className="text-sm text-muted-foreground leading-relaxed">
+            <span dangerouslySetInnerHTML={{ __html: descToShow }} />
+            {isTruncated && !showMore && (
+              <button className="ml-2 text-primary underline text-xs" onClick={() => setShowMore(true)}>Show more</button>
+            )}
+            {showMore && isTruncated && (
+              <button className="ml-2 text-primary underline text-xs" onClick={() => setShowMore(false)}>Show less</button>
+            )}
+          </div>
         )}
-        
-        {(() => {
-          const link = (row.baidu_link || row['baidu_link']) as string | undefined;
-          const desc = (row.description || row.Description || '') as string;
-          return link && !desc.includes(link) ? (
-            <div className="text-xs">
-              <span className="font-medium text-muted-foreground mr-1">baidu_link:</span>
-              <a
-                href={link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary underline break-all"
-              >
-                {link}
-              </a>
-            </div>
-          ) : null;
-        })()}
-
-        <div className="flex flex-wrap gap-2">
-          {(row.priority || row.Priority) && (
-            <div className="flex items-center gap-1">
-              <Flag className="w-3 h-3 text-muted-foreground" />
-              <Badge className={`text-xs ${getPriorityColor(row.priority || row.Priority)}`}>
-                {row.priority || row.Priority}
-              </Badge>
-            </div>
-          )}
-          
-          {(row.status || row.Status) && (
-            <div className="flex items-center gap-1">
-              <div className={`w-2 h-2 rounded-full ${getStatusColor(row.status || row.Status)}`} />
-              <Badge variant="outline" className="text-xs">
-                {row.status || row.Status}
-              </Badge>
-            </div>
-          )}
-          
-          {issueKey && (
-            <div className="text-xs flex items-center gap-1">
-               <span className="font-medium text-muted-foreground">Issue Key:</span>
-               <a
-                 href={`https://mcols.autoever.com/${issueKey}`}
-                 target="_blank"
-                 rel="noopener noreferrer"
-                 className="underline hover:text-primary"
-               >
-                 {issueKey}
-               </a>
-             </div>
-          )}
-          
-          {(row.assignee || row.Assignee) && (
-            <div className="flex items-center gap-1">
-              <User className="w-3 h-3 text-muted-foreground" />
-              <Badge variant="secondary" className="text-xs">
-                {row.assignee || row.Assignee}
-              </Badge>
-            </div>
-          )}
-          
-          {(row.created || row.Created || row['created date'] || row['Created Date']) && (
-            <div className="flex items-center gap-1">
-              <Clock className="w-3 h-3 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground">
-                {row.created || row.Created || row['created date'] || row['Created Date']}
-              </span>
-            </div>
-          )}
-        </div>
-        
-        {/* Additional fields */}
-        <div className="grid grid-cols-2 gap-2 text-xs">
-          {Object.entries(row)
-            .filter(([key]) => !['title', 'Title', 'description', 'Description', 'priority', 'Priority', 'status', 'Status', 'assignee', 'Assignee', 'created', 'Created', 'created date', 'Created Date', 'baidu_link', 'baiduLink', 'baidu link', 'Baidu Link', 'Baidu_Link'].includes(key))
-            .slice(0, 4)
-            .map(([key, value]) => (
-              <div key={key} className="truncate">
-                <span className="font-medium text-muted-foreground">{key}:</span>
-                <span className="ml-1 text-foreground">{value}</span>
-              </div>
-            ))}
-        </div>
       </CardContent>
     </Card>
   );
@@ -249,9 +192,6 @@ export const SearchResults: React.FC<SearchResultsProps> = ({ results, isLoading
                     Title
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    Description
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Priority
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
@@ -287,17 +227,13 @@ export const SearchResults: React.FC<SearchResultsProps> = ({ results, isLoading
                          __html: result.highlightedTitle || result.row.title || result.row.Title || 'Untitled',
                        }}
                      />
-                    <td 
-                      className="px-4 py-3 text-sm text-muted-foreground max-w-xs truncate"
-                      dangerouslySetInnerHTML={{ 
-                        __html: result.highlightedDescription || result.row.description || result.row.Description || '-' 
-                      }}
-                    />
                     <td className="px-4 py-3 text-sm">
                       {(result.row.priority || result.row.Priority) && (
-                        <Badge className={`text-xs ${getPriorityColor(result.row.priority || result.row.Priority)}`}>
+                        <span
+                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${getPriorityColor(result.row.priority || result.row.Priority)}`}
+                        >
                           {result.row.priority || result.row.Priority}
-                        </Badge>
+                        </span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-sm">
